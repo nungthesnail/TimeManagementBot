@@ -1,6 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 using Telegram.Bot;
-using Telegram.Bot.Polling;
 using TimeManagementBot;
+using TimeManagementBot.Data;
+using TimeManagementBot.Implementations;
+using TimeManagementBot.Interfaces;
 
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -15,24 +19,46 @@ if (token is null)
     Console.WriteLine("Bot token is null. Can't initialize the bot client.");
     return;
 }
+const string connStringKey = "Default";
+var connectionString = config.GetConnectionString(connStringKey);
+if (connectionString is null)
+{
+    Console.WriteLine("Bot connection string is null. Can't initialize the bot client.");
+    return;
+}
 
-var botClient = new TelegramBotClient(token);
-var botController = new BotController(new TaskManager());
+var hostBuilder = Host.CreateDefaultBuilder();
+hostBuilder
+    .ConfigureServices(services =>
+    {
+        services
+            .AddHostedService<Worker>()
+            .AddDbContext<ApplicationDbContext>(optionsBuilder => optionsBuilder.UseSqlite(connectionString))
+            .AddSingleton<IConfiguration>(config)
 
-using var cts = new CancellationTokenSource();
+            .AddSingleton<ITelegramBotClient>(_ => new TelegramBotClient(token))
 
-var receiverOptions = new ReceiverOptions();
+            .AddSingleton<IResourceManager>(static services =>
+            {
+                const string configAssetsKey = "Assets";
+                var config = services.GetRequiredService<IConfiguration>();
+                return ResourceManagerFactory.CreateFromConfiguration(config.GetSection(configAssetsKey));
+            })
+            .AddSingleton<IUserStateManager, UserStateManager>()
+            .AddSingleton<ICurrentTaskManager, CurrentTaskManager>()
+            .AddScoped<ITaskManager, EfTaskManager>()
+            .AddScoped<ISummaryCreator, SummaryCreator>()
+            .AddTransient<IBotController, BotControllerDecorator>()
+            .BuildServiceProvider();
+    })
+    .ConfigureLogging((_, logging) =>
+    {
+        logging.ClearProviders();
+        logging.AddSerilog(Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(config)
+            .Enrich.FromLogContext()
+            .CreateLogger());
+    });
 
-botClient.StartReceiving(
-    botController.HandleUpdateAsync,
-    BotController.HandleErrorAsync,
-    receiverOptions,
-    cts.Token
-);
-
-var me = await botClient.GetMe(cancellationToken: cts.Token);
-
-Console.WriteLine($"Start listening @{me.Username}");
-Console.Read();
-
-await cts.CancelAsync();
+var host = hostBuilder.Build();
+await host.RunAsync();

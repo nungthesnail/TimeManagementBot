@@ -1,7 +1,10 @@
 bin/
 obj/
 /packages/
-riderModule.iml
 /_ReSharper.Caches/
-appsettings.development.json
 .idea/
+TimeManagementBot/Migrations/
+riderModule.iml
+appsettings.development.json
+TimeManagementBot.sln.DotSettings.user
+data.db*

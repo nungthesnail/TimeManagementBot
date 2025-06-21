@@ -1,8 +1,10 @@
 ﻿using System.Collections.Concurrent;
+using TimeManagementBot.Interfaces;
+using TimeManagementBot.Models;
 
-namespace TimeManagementBot;
+namespace TimeManagementBot.Implementations;
 
-public class UserManager
+public class UserStateManager : IUserStateManager
 {
     private readonly ConcurrentDictionary<long, UserState> _userStates = new();
     
