@@ -25,4 +25,5 @@ public static class TextRes
     public const string ActionCompleteTask = "ActionCompleteTask";
     public const string ActionReturn = "ActionReturn";
     public const string ActionDeleteTask = "ActionDeleteTask";
+    public const string Summary = "Summary";
 }

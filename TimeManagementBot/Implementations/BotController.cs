@@ -109,7 +109,11 @@ public class BotController(ITaskManager taskManager, IUserStateManager userState
         var summary = await summaryCreator.GetDaySummaryAsync(chatId);
         await taskManager.ResetCompletedTasksAsync(chatId);
 
-        await botClient.SendMessage(chatId, summary, cancellationToken: cancellationToken);
+        await botClient.SendMessage(
+            chatId: chatId,
+            text: summary,
+            parseMode: ParseMode.Html,
+            cancellationToken: cancellationToken);
     }
     
     private async Task SendTaskList(ITelegramBotClient botClient, long chatId,
@@ -260,6 +264,7 @@ public class BotController(ITaskManager taskManager, IUserStateManager userState
                 chatId: chatId,
                 text: resourceManager.GetTextResource(TextRes.TaskSelected, task.Description),
                 replyMarkup: GetTaskActionKeyboard(),
+                parseMode: ParseMode.Html,
                 cancellationToken: cancellationToken);
         }
         else
@@ -304,6 +309,7 @@ public class BotController(ITaskManager taskManager, IUserStateManager userState
         await botClient.SendMessage(
             chatId: chatId,
             text: resourceManager.GetTextResource(TextRes.AvailableActions),
+            ParseMode.Html,
             replyMarkup: new ReplyKeyboardMarkup([
                 [resourceManager.GetTextResource(TextRes.ActionAddTasks)],
                 [resourceManager.GetTextResource(TextRes.ActionViewTasks)],
