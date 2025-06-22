@@ -18,4 +18,7 @@ RUN dotnet publish "TimeManagementBot.csproj" -c $BUILD_CONFIGURATION -o /app/pu
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+RUN mkdir -p data
+
 ENTRYPOINT ["dotnet", "TimeManagementBot.dll"]
